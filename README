@@ -1,0 +1,11 @@
+# OpenGL Recorder
+
+A backend library for writing OpenGL rendering to video files
+
+## Dependencies
+
+Requires standard OpenGL development packages. Install the additional dependencies on a Debian based distribution with
+
+```
+sudo apt-get install libpng-dev libavcodec-dev libavutil-dev
+```
