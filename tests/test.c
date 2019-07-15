@@ -15,10 +15,10 @@
 
 enum Constants { SCREENSHOT_MAX_FILENAME = 256 };
 static int offscreen = 1;
-static unsigned int max_nframes = 1024;
+static unsigned int max_nframes = 512;
 static unsigned int time0;
-static unsigned int height = 128;
-static unsigned int width = 128;
+static unsigned int height = 800;
+static unsigned int width = 800;
 
 static GLuint fbo;
 static GLuint rbo_color;
@@ -101,7 +101,7 @@ static void init()  {
 
 	time0 = glutGet(GLUT_ELAPSED_TIME);
 	model_init();
-	ffmpeg_encoder_start("tmp.mpg", AV_CODEC_ID_MPEG1VIDEO, 25, width, height);
+	ffmpeg_encoder_start(params, "tmp.mpg", AV_CODEC_ID_MPEG1VIDEO, 25);
 }
 
 static void display() {
@@ -124,7 +124,7 @@ static void idle() {
 
 static void deinit()  {
 	printf("FPS = %f\n", 1000.0 * params->currentFrame / (double)(glutGet(GLUT_ELAPSED_TIME) - time0));
-	ffmpeg_encoder_finish();
+	ffmpeg_encoder_finish(params);
 	if (offscreen) {
 		glDeleteFramebuffers(1, &fbo);
 		glDeleteRenderbuffers(1, &rbo_color);
@@ -157,6 +157,8 @@ int main(int argc, char **argv) {
 	if (argc > arg) {
 		height = strtoumax(argv[arg], NULL, 10);
 	}
+
+	params = glrecorder_initParams(width, height);
 
 	/* Work. */
 	if (offscreen) {
