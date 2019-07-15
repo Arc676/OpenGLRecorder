@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef GLRECORDER_H
+#define GLRECORDER_H
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,3 +32,39 @@
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
 #include <libswscale/swscale.h>
+
+typedef enum EncoderState {
+	SUCCESS,
+	CODEC_NOT_FOUND,
+	CODEC_ALLOC_FAILED,
+	OPEN_CODEC_FAILED,
+	OPEN_FILE_FAILED,
+	VIDEO_FRAME_ALLOC_FAILED,
+	RAW_BUFFER_ALLOC_FAILED,
+	FRAME_ENCODE_FAILED
+} EncoderState;
+
+typedef struct RecorderParameters {
+	unsigned int height;
+	unsigned int width;
+	unsigned int currentFrame;
+	AVFrame* frame;
+	AVCodecContext* codecCtx;
+	AVPacket pkt;
+	GLubyte* pixels;
+	uint8_t* rgb;
+	FILE* file;
+	struct SwsContext* swsCtx;
+} RecorderParameters;
+
+EncoderState ffmpeg_encoder_start(RecorderParameters* params, const char *filename, int codec_id, int fps);
+
+EncoderState ffmpeg_encoder_finish(RecorderParameters* params);
+
+RecorderParameters* glrecorder_initParams(unsigned int width, unsigned int height);
+
+void glrecorder_freeParams(RecorderParameters* params);
+
+void glrecorder_processFrame(RecorderParameters* params);
+
+#endif

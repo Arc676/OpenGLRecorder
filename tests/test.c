@@ -13,6 +13,19 @@
 
 #include "glrecorder.h"
 
+enum Constants { SCREENSHOT_MAX_FILENAME = 256 };
+static int offscreen = 1;
+static unsigned int max_nframes = 1024;
+static unsigned int time0;
+static unsigned int height = 128;
+static unsigned int width = 128;
+
+static GLuint fbo;
+static GLuint rbo_color;
+static GLuint rbo_depth;
+
+static RecorderParameters* params;
+
 /* Model. */
 static double angle;
 static double delta_angle;
@@ -27,8 +40,8 @@ static int model_update() {
 	return 0;
 }
 
-static int model_finished() {
-	return nframes >= max_nframes;
+static int model_finished(unsigned int frame) {
+	return frame >= max_nframes;
 }
 
 static void draw_scene() {
@@ -99,8 +112,8 @@ static void display() {
 	} else {
 		glutSwapBuffers();
 	}
-	processFrame();
-	if (model_finished())
+	glrecorder_processFrame(params);
+	if (model_finished(params->currentFrame))
 		exit(EXIT_SUCCESS);
 }
 
@@ -110,15 +123,14 @@ static void idle() {
 }
 
 static void deinit()  {
-	printf("FPS = %f\n", 1000.0 * nframes / (double)(glutGet(GLUT_ELAPSED_TIME) - time0));
-	free(pixels);
+	printf("FPS = %f\n", 1000.0 * params->currentFrame / (double)(glutGet(GLUT_ELAPSED_TIME) - time0));
 	ffmpeg_encoder_finish();
-	free(rgb);
 	if (offscreen) {
 		glDeleteFramebuffers(1, &fbo);
 		glDeleteRenderbuffers(1, &rbo_color);
 		glDeleteRenderbuffers(1, &rbo_depth);
 	}
+	glrecorder_freeParams(params);
 }
 
 int main(int argc, char **argv) {
