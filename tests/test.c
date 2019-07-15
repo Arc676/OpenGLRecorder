@@ -101,7 +101,11 @@ static void init()  {
 
 	time0 = glutGet(GLUT_ELAPSED_TIME);
 	model_init();
-	ffmpeg_encoder_start(params, "tmp.mpg", AV_CODEC_ID_MPEG1VIDEO, 25);
+	EncoderState state = glrecorder_startEncoder(params, "tmp.mpg", AV_CODEC_ID_MPEG1VIDEO, 25);
+	if (state != SUCCESS) {
+		fprintf(stderr, "%s\n", glrecorder_stateToString(state));
+		exit(1);
+	}
 }
 
 static void display() {
@@ -112,9 +116,14 @@ static void display() {
 	} else {
 		glutSwapBuffers();
 	}
-	glrecorder_processFrame(params);
-	if (model_finished(params->currentFrame))
+	EncoderState state = glrecorder_recordFrame(params);
+	if (state != SUCCESS) {
+		fprintf(stderr, "%s\n", glrecorder_stateToString(state));
+		exit(1);
+	}
+	if (model_finished(params->currentFrame)) {
 		exit(EXIT_SUCCESS);
+	}
 }
 
 static void idle() {
@@ -124,7 +133,11 @@ static void idle() {
 
 static void deinit()  {
 	printf("FPS = %f\n", 1000.0 * params->currentFrame / (double)(glutGet(GLUT_ELAPSED_TIME) - time0));
-	ffmpeg_encoder_finish(params);
+	EncoderState state = glrecorder_stopEncoder(params);
+	if (state != SUCCESS) {
+		fprintf(stderr, "%s\n", glrecorder_stateToString(state));
+		exit(1);
+	}
 	if (offscreen) {
 		glDeleteFramebuffers(1, &fbo);
 		glDeleteRenderbuffers(1, &rbo_color);

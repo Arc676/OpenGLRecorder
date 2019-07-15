@@ -57,14 +57,16 @@ typedef struct RecorderParameters {
 	struct SwsContext* swsCtx;
 } RecorderParameters;
 
-EncoderState ffmpeg_encoder_start(RecorderParameters* params, const char *filename, int codec_id, int fps);
+EncoderState glrecorder_startEncoder(RecorderParameters* params, const char *filename, int codec_id, int fps);
 
-EncoderState ffmpeg_encoder_finish(RecorderParameters* params);
+EncoderState glrecorder_stopEncoder(RecorderParameters* params);
 
 RecorderParameters* glrecorder_initParams(unsigned int width, unsigned int height);
 
 void glrecorder_freeParams(RecorderParameters* params);
 
-void glrecorder_processFrame(RecorderParameters* params);
+EncoderState glrecorder_recordFrame(RecorderParameters* params);
+
+char* glrecorder_stateToString(EncoderState state);
 
 #endif

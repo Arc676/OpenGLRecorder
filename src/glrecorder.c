@@ -18,7 +18,7 @@
 
 /* Adapted from: https://github.com/cirosantilli/cpp-cheat/blob/19044698f91fefa9cb75328c44f7a487d336b541/ffmpeg/encode.c */
 
-void ffmpeg_encoder_set_frame_yuv_from_rgb(RecorderParameters* params) {
+void glrecorder_ffmpegEncoderSetFrameYUVFromRGB(RecorderParameters* params) {
 	unsigned int width = params->codecCtx->width;
 	unsigned int height = params->codecCtx->height;
 	const int inLinesize[1] = { 4 * params->codecCtx->width };
@@ -30,16 +30,14 @@ void ffmpeg_encoder_set_frame_yuv_from_rgb(RecorderParameters* params) {
 			height, params->frame->data, params->frame->linesize);
 }
 
-EncoderState ffmpeg_encoder_start(RecorderParameters* params, const char *filename, int codec_id, int fps) {
+EncoderState glrecorder_startEncoder(RecorderParameters* params, const char* filename, int codec_id, int fps) {
 	avcodec_register_all();
 	AVCodec* codec = avcodec_find_encoder(codec_id);
 	if (!codec) {
-		fprintf(stderr, "Codec not found\n");
 		return CODEC_NOT_FOUND;
 	}
 	AVCodecContext* c = avcodec_alloc_context3(codec);
 	if (!c) {
-		fprintf(stderr, "Could not allocate video codec context\n");
 		return CODEC_ALLOC_FAILED;
 	}
 	c->bit_rate = 400000;
@@ -54,17 +52,14 @@ EncoderState ffmpeg_encoder_start(RecorderParameters* params, const char *filena
 		av_opt_set(c->priv_data, "preset", "slow", 0);
 	}
 	if (avcodec_open2(c, codec, NULL) < 0) {
-		fprintf(stderr, "Could not open codec\n");
 		return OPEN_CODEC_FAILED;
 	}
 	FILE* file = fopen(filename, "wb");
 	if (!file) {
-		fprintf(stderr, "Could not open %s\n", filename);
 		return OPEN_FILE_FAILED;
 	}
 	AVFrame* frame = av_frame_alloc();
 	if (!frame) {
-		fprintf(stderr, "Could not allocate video frame\n");
 		return VIDEO_FRAME_ALLOC_FAILED;
 	}
 	frame->format = c->pix_fmt;
@@ -72,7 +67,6 @@ EncoderState ffmpeg_encoder_start(RecorderParameters* params, const char *filena
 	frame->height = c->height;
 	int ret = av_image_alloc(frame->data, frame->linesize, c->width, c->height, c->pix_fmt, 32);
 	if (ret < 0) {
-		fprintf(stderr, "Could not allocate raw picture buffer\n");
 		return RAW_BUFFER_ALLOC_FAILED;
 	}
 	params->frame = frame;
@@ -81,14 +75,13 @@ EncoderState ffmpeg_encoder_start(RecorderParameters* params, const char *filena
 	return SUCCESS;
 }
 
-EncoderState ffmpeg_encoder_finish(RecorderParameters* params) {
+EncoderState glrecorder_stopEncoder(RecorderParameters* params) {
 	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
 	int gotOutput, ret;
 	do {
 		fflush(stdout);
 		ret = avcodec_encode_video2(params->codecCtx, &(params->pkt), NULL, &gotOutput);
 		if (ret < 0) {
-			fprintf(stderr, "Error encoding frame\n");
 			return FRAME_ENCODE_FAILED;
 		}
 		if (gotOutput) {
@@ -105,15 +98,14 @@ EncoderState ffmpeg_encoder_finish(RecorderParameters* params) {
 	return SUCCESS;
 }
 
-EncoderState ffmpeg_encoder_encode_frame(RecorderParameters* params) {
-	ffmpeg_encoder_set_frame_yuv_from_rgb(params);
+EncoderState glrecorder_encodeFrame(RecorderParameters* params) {
+	glrecorder_ffmpegEncoderSetFrameYUVFromRGB(params);
 	av_init_packet(&(params->pkt));
 	params->pkt.data = NULL;
 	params->pkt.size = 0;
 	int gotOutput;
 	int ret = avcodec_encode_video2(params->codecCtx, &(params->pkt), params->frame, &gotOutput);
 	if (ret < 0) {
-		fprintf(stderr, "Error encoding frame\n");
 		return FRAME_ENCODE_FAILED;
 	}
 	if (gotOutput) {
@@ -123,7 +115,7 @@ EncoderState ffmpeg_encoder_encode_frame(RecorderParameters* params) {
 	return SUCCESS;
 }
 
-void ffmpeg_encoder_glread_rgb(RecorderParameters* params) {
+void glrecorder_encoderReadRGB(RecorderParameters* params) {
 	unsigned int width = params->width;
 	unsigned int height = params->height;
 	size_t i, j, k, cur_gl, cur_rgb, nvals;
@@ -137,17 +129,25 @@ void ffmpeg_encoder_glread_rgb(RecorderParameters* params) {
 		for (j = 0; j < width; j++) {
 			cur_gl  = format_nchannels * (width * (height - i - 1) + j);
 			cur_rgb = format_nchannels * (width * i + j);
-			for (k = 0; k < format_nchannels; k++)
+			for (k = 0; k < format_nchannels; k++) {
 				params->rgb[cur_rgb + k] = params->pixels[cur_gl + k];
+			}
 		}
 	}
 }
 
-void glrecorder_processFrame(RecorderParameters* params) {
+EncoderState glrecorder_recordFrame(RecorderParameters* params) {
 	params->frame->pts = params->currentFrame;
-	ffmpeg_encoder_glread_rgb(params);
-	ffmpeg_encoder_encode_frame(params);
+	EncoderState state = glrecorder_encoderReadRGB(params);
+	if (state != SUCCESS) {
+		return state;
+	}
+	state = glrecorder_encodeFrame(params);
+	if (state != SUCCESS) {
+		return state;
+	}
 	params->currentFrame++;
+	return SUCCESS;
 }
 
 RecorderParameters* glrecorder_initParams(unsigned int width, unsigned int height) {
@@ -162,4 +162,27 @@ void glrecorder_freeParams(RecorderParameters* params) {
 	free(params->pixels);
 	free(params->rgb);
 	free(params);
+}
+
+char* glrecorder_stateToString(EncoderState state) {
+	switch (state) {
+	case SUCCESS:
+		return "Encoder working fine";
+	case CODEC_NOT_FOUND:
+		return "Codec not found";
+	case CODEC_ALLOC_FAILED:
+		return "Could not allocate video codec context";
+	case OPEN_CODEC_FAILED:
+		return "Could not open video codec";
+	case OPEN_FILE_FAILED:
+		return "Could not open output file";
+	case VIDEO_FRAME_ALLOC_FAILED:
+		return "Could not allocate video frame";
+	case RAW_BUFFER_ALLOC_FAILED:
+		return "Could not allocate raw picture buffer";
+	case FRAME_ENCODE_FAILED:
+		return "Error encoding frame";
+	default:
+		return "Unknown state";
+	}
 }
