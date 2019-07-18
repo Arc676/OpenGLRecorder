@@ -138,11 +138,8 @@ void glrecorder_encoderReadRGB(RecorderParameters* params) {
 
 EncoderState glrecorder_recordFrame(RecorderParameters* params) {
 	params->frame->pts = params->currentFrame;
-	EncoderState state = glrecorder_encoderReadRGB(params);
-	if (state != SUCCESS) {
-		return state;
-	}
-	state = glrecorder_encodeFrame(params);
+	glrecorder_encoderReadRGB(params);
+	EncoderState state = glrecorder_encodeFrame(params);
 	if (state != SUCCESS) {
 		return state;
 	}
