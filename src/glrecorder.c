@@ -30,9 +30,9 @@ void glrecorder_ffmpegEncoderSetFrameYUVFromRGB(RecorderParameters* params) {
 			height, params->frame->data, params->frame->linesize);
 }
 
-EncoderState glrecorder_startEncoder(RecorderParameters* params, const char* filename, int codec_id, int fps) {
+EncoderState glrecorder_startEncoder(RecorderParameters* params, const char* filename, int codecID, int fps) {
 	avcodec_register_all();
-	AVCodec* codec = avcodec_find_encoder(codec_id);
+	AVCodec* codec = avcodec_find_encoder(codecID);
 	if (!codec) {
 		return CODEC_NOT_FOUND;
 	}
@@ -48,7 +48,7 @@ EncoderState glrecorder_startEncoder(RecorderParameters* params, const char* fil
 	c->gop_size = 10;
 	c->max_b_frames = 1;
 	c->pix_fmt = AV_PIX_FMT_YUV420P;
-	if (codec_id == AV_CODEC_ID_H264) {
+	if (codecID == AV_CODEC_ID_H264) {
 		av_opt_set(c->priv_data, "preset", "slow", 0);
 	}
 	if (avcodec_open2(c, codec, NULL) < 0) {

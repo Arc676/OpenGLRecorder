@@ -8,8 +8,8 @@ Project available under GPLv3. Based on [work by Ciro Santilli](https://github.c
 
 ## Dependencies
 
-Requires standard OpenGL development packages. Install the additional dependencies on a Debian based distribution with
+Requires standard OpenGL development packages (e.g. `freeglut3-dev`). Install the additional dependencies on a Debian based distribution with
 
 ```
-sudo apt-get install libpng-dev libavcodec-dev libavutil-dev
+sudo apt-get install libswscale-dev libavcodec-dev libavutil-dev
 ```
