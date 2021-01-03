@@ -4,7 +4,7 @@ A backend library for writing OpenGL rendering to video files
 
 ## Licensing
 
-Project available under GPLv3. Based on [work by Ciro Santilli](https://github.com/cirosantilli/cpp-cheat/blob/70b22ac36f92e93c94f951edb8b5af7947546525/opengl/offscreen.c) also available under GPLv3.
+Project available under GPLv3. Based on [work by Ciro Santilli](https://github.com/cirosantilli/cpp-cheat/blob/70b22ac36f92e93c94f951edb8b5af7947546525/opengl/offscreen.c), also available under GPLv3, and [sample code from Libav](https://libav.org/documentation/doxygen/master/encode_video_8c-example.html), under LGPL 2.1.
 
 ## Dependencies
 

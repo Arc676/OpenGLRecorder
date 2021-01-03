@@ -1,6 +1,8 @@
-// Copyright (C) 2019 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
+// Copyright (C) 2019-21 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
 // Based on work by Ciro Santilli available at
 // https://github.com/cirosantilli/cpp-cheat/blob/70b22ac36f92e93c94f951edb8b5af7947546525/opengl/offscreen.c
+// and LGPL-licensed sample code from Libav
+// https://libav.org/documentation/doxygen/master/encode_video_8c-example.html
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,7 +18,10 @@
 
 #include "glrecorder.h"
 
-/* Adapted from: https://github.com/cirosantilli/cpp-cheat/blob/19044698f91fefa9cb75328c44f7a487d336b541/ffmpeg/encode.c */
+/*
+	Adapted from: https://github.com/cirosantilli/cpp-cheat/blob/19044698f91fefa9cb75328c44f7a487d336b541/ffmpeg/encode.c
+	Also based on: https://libav.org/documentation/doxygen/master/encode_video_8c-example.html#a5
+*/
 
 void glrecorder_ffmpegEncoderSetFrameYUVFromRGB(RecorderParameters* params) {
 	unsigned int width = params->codecCtx->width;
@@ -31,7 +36,6 @@ void glrecorder_ffmpegEncoderSetFrameYUVFromRGB(RecorderParameters* params) {
 }
 
 EncoderState glrecorder_startEncoder(RecorderParameters* params, const char* filename, int codecID, int fps) {
-	avcodec_register_all();
 	AVCodec* codec = avcodec_find_encoder(codecID);
 	if (!codec) {
 		return CODEC_NOT_FOUND;
@@ -75,21 +79,31 @@ EncoderState glrecorder_startEncoder(RecorderParameters* params, const char* fil
 	return SUCCESS;
 }
 
+int encodeVideo(RecorderParameters* params, AVFrame* frame) {
+	fflush(stdout);
+	int ret = avcodec_send_frame(params->codecCtx, frame);
+	if (ret < 0) {
+		return 0;
+	}
+	while (ret >= 0) {
+		ret = avcodec_receive_packet(params->codecCtx, &(params->pkt));
+		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+			break;
+		} else if (ret < 0) {
+			return 0;
+		}
+		fwrite(params->pkt.data, params->pkt.size, 1, params->file);
+		av_packet_unref(&(params->pkt));
+	}
+	return 1;
+}
+
 EncoderState glrecorder_stopEncoder(RecorderParameters* params) {
+	if (!encodeVideo(params, NULL)) {
+		return FRAME_ENCODE_FAILED;
+	}
 	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
-	int gotOutput, ret;
-	do {
-		fflush(stdout);
-		ret = avcodec_encode_video2(params->codecCtx, &(params->pkt), NULL, &gotOutput);
-		if (ret < 0) {
-			return FRAME_ENCODE_FAILED;
-		}
-		if (gotOutput) {
-			fwrite(params->pkt.data, 1, params->pkt.size, params->file);
-			av_packet_unref(&(params->pkt));
-		}
-	} while (gotOutput);
-	fwrite(endcode, 1, sizeof(endcode), params->file);
+	fwrite(endcode, sizeof(endcode), 1, params->file);
 	fclose(params->file);
 	avcodec_close(params->codecCtx);
 	av_free(params->codecCtx);
@@ -103,14 +117,8 @@ EncoderState glrecorder_encodeFrame(RecorderParameters* params) {
 	av_init_packet(&(params->pkt));
 	params->pkt.data = NULL;
 	params->pkt.size = 0;
-	int gotOutput;
-	int ret = avcodec_encode_video2(params->codecCtx, &(params->pkt), params->frame, &gotOutput);
-	if (ret < 0) {
+	if (!encodeVideo(params, params->frame)) {
 		return FRAME_ENCODE_FAILED;
-	}
-	if (gotOutput) {
-		fwrite(params->pkt.data, 1, params->pkt.size, params->file);
-		av_packet_unref(&(params->pkt));
 	}
 	return SUCCESS;
 }
