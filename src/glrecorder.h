@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
+// Copyright (C) 2019-21 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
 // Based on work by Ciro Santilli available at
 // https://github.com/cirosantilli/cpp-cheat/blob/70b22ac36f92e93c94f951edb8b5af7947546525/opengl/offscreen.c
 
@@ -13,6 +13,10 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef GLRECORDER_H
 #define GLRECORDER_H
@@ -107,4 +111,8 @@ EncoderState glrecorder_recordFrame(RecorderParameters* params);
  */
 char* glrecorder_stateToString(EncoderState state);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
