@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
+// Copyright (C) 2019-21 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
 // Based on work by Ciro Santilli available at
 // https://github.com/cirosantilli/cpp-cheat/blob/70b22ac36f92e93c94f951edb8b5af7947546525/opengl/offscreen.c
 
@@ -13,7 +13,6 @@
 
 #include "glrecorder.h"
 
-enum Constants { SCREENSHOT_MAX_FILENAME = 256 };
 static int offscreen = 1;
 static unsigned int max_nframes = 512;
 static unsigned int time0;
@@ -109,7 +108,6 @@ static void init()  {
 }
 
 static void display() {
-	char filename[SCREENSHOT_MAX_FILENAME];
 	draw_scene();
 	if (offscreen) {
 		glFlush();
